@@ -30,23 +30,36 @@ fn retrieve_uf_from_body(body string) !string {
 	now := time.now()
 	obj := html.parse(body)
 	divs := obj.get_tag('div')
+	mut body_found := false
+	mut all_month_div := &html.Tag{}
+
 	for div in divs {
-		if div.attributes['id'] != '' && div.attributes['id'] == 'mes_all' {
-			tbody := div.get_tags('tbody')
-			if tbody.len > 0 {
-				trs := tbody[0].get_tags('tr')
-				if trs.len >= now.day {
-					day_val := trs[now.day - 1]
-					tds := day_val.get_tags('td')
-					if tds.len >= now.month {
-						return tds[now.month - 1].text()
-					}
-					return error('invalid number of rows when searching td')
-				}
-				return error('invalid length of rows when searching tr')
-			}
-			return error('tbody tag not found')
+		if div.attributes['id'] == 'mes_all' {
+			all_month_div = div
+			body_found = true
+			break
 		}
 	}
-	return error('divs not found')
+	if !body_found {
+		return error('div with all uf values not found')
+	}
+
+	tbody := all_month_div.get_tags('tbody')
+	if tbody.len == 0 {
+		return error('tbody tag not found')
+	}
+
+	trs := tbody[0].get_tags('tr')
+	if trs.len < now.day {
+		return error('invalid length of rows when searching tr')
+	}
+
+	day_val := trs[now.day - 1]
+	tds := day_val.get_tags('td')
+
+	if tds.len < now.month {
+		return error('invalid number of rows when searching td')
+	}
+
+	return tds[now.month - 1].text()
 }
