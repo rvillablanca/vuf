@@ -5,9 +5,7 @@ import net.http
 import net.html
 
 fn main() {
-	now := time.now()
-	year := now.year
-	uf_url := 'https://www.sii.cl/valores_y_fechas/uf/uf${year}.htm'
+	uf_url := 'https://www.sii.cl/valores_y_fechas/uf/uf${time.now().year}.htm'
 	resp := http.get(uf_url) or {
 		eprint('unable to make request: ${err}')
 		return
@@ -29,7 +27,7 @@ fn main() {
 fn retrieve_uf_from_body(body string) !string {
 	now := time.now()
 	obj := html.parse(body)
-	divs := obj.get_tag('div')
+	divs := obj.get_tags(name: 'div')
 	mut body_found := false
 	mut all_month_div := &html.Tag{}
 
