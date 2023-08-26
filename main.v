@@ -3,6 +3,8 @@ module main
 import time
 import net.http
 import net.html
+import os
+import math
 
 fn main() {
 	uf_url := 'https://www.sii.cl/valores_y_fechas/uf/uf${time.now().year}.htm'
@@ -16,38 +18,43 @@ fn main() {
 		return
 	}
 
-	uf_val := retrieve_uf_from_body(resp.body) or {
+	mut uf_val := retrieve_uf_from_body(resp.body) or {
 		eprintln('an error happened: ${err}')
 		return
 	}
+	uf_val = uf_val.replace('.', '').replace(',', '.')
+	uf := int(math.round(uf_val.f32()))
 
-	println(uf_val)
+	if os.args.len == 1 {
+		println(uf)
+		return
+	}
+
+	n := os.args[1].f32()
+	if n == 0 {
+		eprintln('invalid number')
+		return
+	}
+
+	println('${uf} * ${n} = ${int(math.round(uf * n))}')
 }
 
 fn retrieve_uf_from_body(body string) !string {
 	now := time.now()
 	obj := html.parse(body)
-	divs := obj.get_tags(name: 'div')
-	mut body_found := false
-	mut all_month_div := &html.Tag{}
+	mut divs := obj.get_tags(name: 'div')
 
-	for div in divs {
-		if div.attributes['id'] == 'mes_all' {
-			all_month_div = div
-			body_found = true
-			break
-		}
-	}
-	if !body_found {
+	divs = divs.filter(it.attributes['id'] == 'mes_all')
+	if divs.len == 0 {
 		return error('div with all uf values not found')
 	}
 
-	tbody := all_month_div.get_tags('tbody')
+	tbody := divs.first().get_tags('tbody')
 	if tbody.len == 0 {
 		return error('tbody tag not found')
 	}
 
-	trs := tbody[0].get_tags('tr')
+	trs := tbody.first().get_tags('tr')
 	if trs.len < now.day {
 		return error('invalid length of rows when searching tr')
 	}
